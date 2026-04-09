@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import numpy as np
 from value import Value
 
 class Functional:
     @staticmethod
-    def softmax_cross_entropy(logits, target, eps=1e-12):
+    def softmax_cross_entropy(logits: Value, target: int, eps: float = 1e-12) -> Value:
         x = logits.data
         if x.ndim != 2 or x.shape[0] != 1:
             raise ValueError(f"expected logits shape (1, C), got {x.shape}")
@@ -15,7 +17,7 @@ class Functional:
 
         out = Value(loss_data, (logits,), 'softmax_ce')
 
-        def _backward():
+        def _backward() -> None:
             dlogits = probs
             dlogits = dlogits.copy()
             dlogits[0, int(target)] -= 1.0

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import time
 
@@ -8,13 +10,14 @@ from mnist_data import load_mnist, sample_to_vector
 from optimizer import Optimizer
 from perceptron import MLP
 from value import Value
+from weights_json import save_mlp_weights_json
 
 
 def predict_class(logits: np.ndarray) -> int:
     return int(np.argmax(logits, axis=1)[0])
 
 
-def accuracy(model, x, y, n_eval: int) -> float:
+def accuracy(model: MLP, x: np.ndarray, y: np.ndarray, n_eval: int) -> float:
     n = min(int(n_eval), len(x))
     correct = 0
     for i in range(n):
@@ -26,7 +29,7 @@ def accuracy(model, x, y, n_eval: int) -> float:
     return correct / n
 
 
-def main():
+def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--epochs", type=int, default=1)
     p.add_argument("--lr", type=float, default=0.05)
@@ -34,6 +37,7 @@ def main():
     p.add_argument("--eval-every", type=int, default=2000)
     p.add_argument("--eval-n", type=int, default=1000)
     p.add_argument("--seed", type=int, default=1337)
+    p.add_argument("--export-weights-json", type=str, default="")
     args = p.parse_args()
 
     np.random.seed(args.seed)
@@ -73,6 +77,10 @@ def main():
     train_acc = accuracy(model, x_train, y_train, 10000)
     test_acc = accuracy(model, x_test, y_test, 10000)
     print(f"final train_acc@10000={train_acc:.3f} test_acc@10000={test_acc:.3f}")
+
+    if args.export_weights_json:
+        save_mlp_weights_json(model, args.export_weights_json)
+        print(f"saved weights to {args.export_weights_json}")
 
 
 if __name__ == "__main__":

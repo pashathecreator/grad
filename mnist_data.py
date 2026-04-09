@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import urllib.request
@@ -31,7 +33,10 @@ def download_mnist(path: str = "mnist.npz", verify_hash: bool = True) -> str:
     return path
 
 
-def load_mnist(path: str = "mnist.npz", normalize: bool = True):
+def load_mnist(
+    path: str = "mnist.npz",
+    normalize: bool = True,
+) -> tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
     path = download_mnist(path)
     with np.load(path, allow_pickle=True) as f:
         x_train, y_train = f["x_train"], f["y_train"]

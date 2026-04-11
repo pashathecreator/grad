@@ -5,7 +5,7 @@ from value import Value
 
 class MLP:
     def __init__(self) -> None:
-        self.layers = [
+        self.layers: list[Layer] = [
             Layer(784, 128, activation="relu"),
             Layer(128, 64, activation="relu"),
             Layer(64, 10, activation="linear"),

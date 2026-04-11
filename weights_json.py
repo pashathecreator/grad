@@ -11,7 +11,7 @@ def save_mlp_weights_json(model: MLP, path: str = "mlp_weights.json") -> None:
     layers = []
     for layer in model.layers:
         W = np.asarray(layer.W.data, dtype=np.float32)
-        b = np.asarray(layer.b.data, dtype=np.float32).reshape(-1)
+        b = np.asarray(layer.b.data, dtype=np.float32).ravel(order="C")
 
         if W.ndim != 2:
             raise ValueError(f"expected W to be 2D, got {W.shape}")

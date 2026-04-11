@@ -7,9 +7,6 @@ class Functional:
     @staticmethod
     def softmax_cross_entropy(logits: Value, target: int, eps: float = 1e-12) -> Value:
         x = logits.data
-        if x.ndim != 2 or x.shape[0] != 1:
-            raise ValueError(f"expected logits shape (1, C), got {x.shape}")
-
         x = x - x.max(axis=1, keepdims=True)
         exp = np.exp(x)
         probs = exp / exp.sum(axis=1, keepdims=True)

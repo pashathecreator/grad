@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 import time
 
@@ -21,7 +19,7 @@ def accuracy(model: MLP, x: np.ndarray, y: np.ndarray, n_eval: int) -> float:
     n = min(int(n_eval), len(x))
     correct = 0
     for i in range(n):
-        xi = Value(sample_to_vector(x[i]))
+        xi = Value(sample_to_vector(x[i]).reshape(1, 28 * 28))
         logits = model(xi).data
         pred = predict_class(logits)
         if pred == int(y[i]):
@@ -53,7 +51,7 @@ def main() -> None:
     t0 = time.time()
     for epoch in range(int(args.epochs)):
         for i in range(n_train):
-            xi = Value(sample_to_vector(x_train[i]))
+            xi = Value(sample_to_vector(x_train[i]).reshape(1, 28 * 28))
             yi = int(y_train[i])
 
             logits = model(xi)

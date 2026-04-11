@@ -2,28 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 
-from collections.abc import Iterable
 from typing import Any
 
-from numpy.typing import NDArray
-
-
-def unbroadcast(grad: NDArray[np.float64], target_shape: tuple[int, ...]) -> NDArray[np.float64]:
-    while grad.ndim > len(target_shape):
-        grad = grad.sum(axis=0)
-
-    for axis, size in enumerate(target_shape):
-        if size == 1:
-            grad = grad.sum(axis=axis, keepdims=True)
-
-    return grad
 
 class Value:
     def __init__(
         self,
         data: Any,
-        _parents: Iterable[Value] = (),
-        _op: str = '',
+        _parents: tuple[Value, ...] = (),
+        _op: str = "",
     ) -> None:
         self.data = np.array(data, dtype=np.float64)
         self.grad = np.zeros_like(self.data)
@@ -31,31 +18,18 @@ class Value:
         self._parents = set(_parents)
         self._op = _op
 
-    def __add__(self, other: Any) -> Value:
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data + other.data, (self, other), '+')
+    def __add__(self, other: Value) -> Value:
+        out = Value(self.data + other.data, (self, other), "+")
 
         def _backward() -> None:
-            self.grad += unbroadcast(out.grad, self.data.shape)
-            other.grad += unbroadcast(out.grad, other.data.shape)
+            self.grad += out.grad
+            other.grad += out.grad
 
         out._backward = _backward
         return out
 
-    def __mul__(self, other: Any) -> Value:
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data * other.data, (self, other), '*')
-
-        def _backward() -> None:
-            self.grad += unbroadcast(other.data * out.grad, self.data.shape)
-            other.grad += unbroadcast(self.data * out.grad, other.data.shape)
-
-        out._backward = _backward
-        return out
-
-    def __matmul__(self, other: Any) -> Value:
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data @ other.data, (self, other), '@')
+    def __matmul__(self, other: Value) -> Value:
+        out = Value(self.data @ other.data, (self, other), "@")
 
         def _backward() -> None:
             self.grad += out.grad @ other.data.T
@@ -64,21 +38,8 @@ class Value:
         out._backward = _backward
         return out
 
-    def transpose(self) -> Value:
-        out = Value(self.data.T, (self,), 'T')
-
-        def _backward() -> None:
-            self.grad += out.grad.T
-
-        out._backward = _backward
-        return out
-
-    @property
-    def T(self) -> Value:
-        return self.transpose()
-
     def relu(self) -> Value:
-        out = Value(np.maximum(0, self.data), (self,), 'relu')
+        out = Value(np.maximum(0, self.data), (self,), "relu")
 
         def _backward() -> None:
             self.grad += (out.data > 0) * out.grad
@@ -87,51 +48,14 @@ class Value:
         return out
 
     def sum(self) -> Value:
-        out = Value(self.data.sum(), (self,), 'sum')
+        out = Value(self.data.sum(), (self,), "sum")
 
         def _backward() -> None:
-            self.grad += np.ones_like(self.data) * out.grad
+            g = float(out.grad)
+            self.grad += np.full_like(self.data, g)
 
         out._backward = _backward
         return out
-
-    def reshape(self, *shape: int) -> Value:
-        out = Value(self.data.reshape(*shape), (self,), 'reshape')
-
-        def _backward() -> None:
-            self.grad += out.grad.reshape(self.data.shape)
-
-        out._backward = _backward
-        return out
-
-    def __radd__(self, other: Any) -> Value:
-        return self + other
-
-    def __rmul__(self, other: Any) -> Value:
-        return self * other
-
-    def __neg__(self) -> Value:
-        return self * -1
-
-    def __sub__(self, other: Any) -> Value:
-        return self + (-other)
-
-    def __rsub__(self, other: Any) -> Value:
-        return other + (-self)
-
-    def __truediv__(self, other: Any) -> Value:
-        other = other if isinstance(other, Value) else Value(other)
-        out = Value(self.data / other.data, (self, other), '/')
-
-        def _backward() -> None:
-            self.grad += unbroadcast(out.grad / other.data, self.data.shape)
-            other.grad += unbroadcast((-(self.data) / (other.data ** 2)) * out.grad, other.data.shape)
-
-        out._backward = _backward
-        return out
-
-    def __rtruediv__(self, other: Any) -> Value:
-        return Value(other) / self
 
     def backward(self) -> None:
         topo = []
@@ -145,8 +69,6 @@ class Value:
                 topo.append(v)
 
         dfs(self)
-        if self.data.size != 1:
-            raise RuntimeError("backward() can only be called on a scalar Value")
         self.grad = np.ones_like(self.data)
         for v in reversed(topo):
             v._backward()

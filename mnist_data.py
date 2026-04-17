@@ -36,18 +36,26 @@ def download_mnist(path: str = "mnist.npz", verify_hash: bool = True) -> str:
 def load_mnist(
     path: str = "mnist.npz",
     normalize: bool = True,
-) -> tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
+) -> tuple[
+    tuple[list[list[float]], list[int]],
+    tuple[list[list[float]], list[int]],
+]:
     path = download_mnist(path)
     with np.load(path, allow_pickle=True) as f:
-        x_train, y_train = f["x_train"], f["y_train"]
-        x_test, y_test = f["x_test"], f["y_test"]
+        x_train_np = f["x_train"]
+        y_train_np = f["y_train"]
+        x_test_np = f["x_test"]
+        y_test_np = f["y_test"]
 
-    if normalize:
-        x_train = x_train.astype(np.float64) / 255.0
-        x_test = x_test.astype(np.float64) / 255.0
+    def to_flat_floats(arr: np.ndarray) -> list[list[float]]:
+        """(N, 28, 28) → list of N flat float lists of length 784"""
+        if normalize:
+            arr = arr.astype(np.float64) / 255.0
+        return [row.reshape(784).tolist() for row in arr]
 
-    return (x_train, y_train.astype(np.int64)), (x_test, y_test.astype(np.int64))
+    x_train = to_flat_floats(x_train_np)
+    x_test = to_flat_floats(x_test_np)
+    y_train = y_train_np.tolist()
+    y_test = y_test_np.tolist()
 
-
-def sample_to_vector(x28: np.ndarray) -> np.ndarray:
-    return x28.reshape(28 * 28)
+    return (x_train, y_train), (x_test, y_test)

@@ -1,3 +1,3 @@
 ```
-python3 train_mnist.py --epochs 1 --lr 0.01
+python3 train_mnist.py --epochs 1 --lr 0.01 --export-weights-json weights.json
 ```

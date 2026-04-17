@@ -3,7 +3,9 @@ from value import Value
 
 
 class Optimizer:
-    def __init__(self, parameters: list[Value] | tuple[Value, ...], lr: float = 0.01) -> None:
+    def __init__(
+        self, parameters: list[Value] | tuple[Value, ...], lr: float = 0.01
+    ) -> None:
         self.parameters = parameters
         self.lr = lr
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from layer import Layer
 from value import Value
 
+
 class MLP:
     def __init__(self) -> None:
         self.layers: list[Layer] = [

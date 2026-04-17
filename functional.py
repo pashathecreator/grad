@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-import numpy as np
+import math
 from value import Value
+
 
 class Functional:
     @staticmethod
-    def softmax_cross_entropy(logits: Value, target: int, eps: float = 1e-12) -> Value:
-        x = logits.data
-        x = x - x.max(axis=1, keepdims=True)
-        exp = np.exp(x)
-        probs = exp / exp.sum(axis=1, keepdims=True)
-        loss_data = -np.log(probs[0, int(target)] + eps)
+    def softmax_cross_entropy(
+        logits: list[Value], target: int, eps: float = 1e-12
+    ) -> Value:
+        max_val = max(v.data for v in logits)
+        exps = [math.exp(v.data - max_val) for v in logits]
+        s = sum(exps)
+        probs = [e / s for e in exps]
 
-        out = Value(loss_data, (logits,), 'softmax_ce')
+        loss_data = -math.log(probs[target] + eps)
+        out = Value(loss_data, tuple(logits), "softmax_ce")
 
         def _backward() -> None:
-            dlogits = probs
-            dlogits = dlogits.copy()
-            dlogits[0, int(target)] -= 1.0
-            logits.grad += out.grad * dlogits
+            for i, v in enumerate(logits):
+                v.grad += out.grad * (probs[i] - (1.0 if i == target else 0.0))
 
         out._backward = _backward
         return out

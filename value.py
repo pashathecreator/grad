@@ -1,7 +1,4 @@
 from __future__ import annotations
-
-import numpy as np
-
 from typing import Any
 
 
@@ -12,8 +9,8 @@ class Value:
         _parents: tuple[Value, ...] = (),
         _op: str = "",
     ) -> None:
-        self.data = np.array(data, dtype=np.float64)
-        self.grad = np.zeros_like(self.data)
+        self.data = float(data)
+        self.grad = 0.0
         self._backward = lambda: None
         self._parents = set(_parents)
         self._op = _op
@@ -28,31 +25,21 @@ class Value:
         out._backward = _backward
         return out
 
-    def __matmul__(self, other: Value) -> Value:
-        out = Value(self.data @ other.data, (self, other), "@")
+    def __mul__(self, other: Value) -> Value:
+        out = Value(self.data * other.data, (self, other), "*")
 
         def _backward() -> None:
-            self.grad += out.grad @ other.data.T
-            other.grad += self.data.T @ out.grad
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
 
         out._backward = _backward
         return out
 
     def relu(self) -> Value:
-        out = Value(np.maximum(0, self.data), (self,), "relu")
+        out = Value(max(0.0, self.data), (self,), "relu")
 
         def _backward() -> None:
-            self.grad += (out.data > 0) * out.grad
-
-        out._backward = _backward
-        return out
-
-    def sum(self) -> Value:
-        out = Value(self.data.sum(), (self,), "sum")
-
-        def _backward() -> None:
-            g = float(out.grad)
-            self.grad += np.full_like(self.data, g)
+            self.grad += (1.0 if out.data > 0 else 0.0) * out.grad
 
         out._backward = _backward
         return out
@@ -69,7 +56,7 @@ class Value:
                 topo.append(v)
 
         dfs(self)
-        self.grad = np.ones_like(self.data)
+        self.grad = 1.0
         for v in reversed(topo):
             v._backward()
 

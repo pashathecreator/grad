@@ -2,30 +2,33 @@ from __future__ import annotations
 
 import json
 
-import numpy as np
-
 from perceptron import MLP
 
 
 def save_mlp_weights_json(model: MLP, path: str = "mlp_weights.json") -> None:
     layers = []
     for layer in model.layers:
-        W = np.asarray(layer.W.data, dtype=np.float32)
-        b = np.asarray(layer.b.data, dtype=np.float32).ravel(order="C")
+        nin = len(layer.neurons[0].w)
+        nout = len(layer.neurons)
 
-        if W.ndim != 2:
-            raise ValueError(f"expected W to be 2D, got {W.shape}")
-        if b.ndim != 1:
-            raise ValueError(f"expected b to be 1D, got {b.shape}")
-        if W.shape[1] != b.shape[0]:
-            raise ValueError(f"W out dim {W.shape[1]} != b dim {b.shape[0]}")
+        W_flat = []
+        for row in range(nin):
+            for neuron in layer.neurons:
+                W_flat.append(float(neuron.w[row].data))
+
+        b = [float(neuron.b.data) for neuron in layer.neurons]
+
+        if len(W_flat) != nin * nout:
+            raise ValueError(f"W size mismatch: {len(W_flat)} != {nin}*{nout}")
+        if len(b) != nout:
+            raise ValueError(f"b size mismatch: {len(b)} != {nout}")
 
         layers.append(
             {
-                "W_shape": [int(W.shape[0]), int(W.shape[1])],
-                "W": W.ravel(order="C").tolist(),
-                "b_shape": [int(b.shape[0])],
-                "b": b.tolist(),
+                "W_shape": [nin, nout],
+                "W": W_flat,
+                "b_shape": [nout],
+                "b": b,
             }
         )
 
